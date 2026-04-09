@@ -12,6 +12,7 @@ import { STATUS_LABELS, MODALITY_LABELS, TYPE_LABELS } from "@/lib/constants"
 import type { PropertyStatus } from "@/lib/constants"
 import type { Property, PriceBreakdown } from "@/lib/types"
 import { cn } from "@/lib/utils"
+import { SchedulingDrawer } from "@/components/shared/SchedulingDrawer"
 
 /** Extract price_breakdown from notes fallback tag */
 function hydrateBreakdown(p: Property): Property {
@@ -69,6 +70,8 @@ export function PropertyDetailPage() {
   const { properties, updateProperty, removeProperty } = usePropertyStore()
   const [property, setProperty] = useState<Property | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [isScheduling, setIsScheduling] = useState(false)
+  const [isSavingSchedule, setIsSavingSchedule] = useState(false)
 
   useEffect(() => {
     const found = properties.find((p) => p.id === id)
@@ -90,6 +93,11 @@ export function PropertyDetailPage() {
   const handleStatusChange = async (status: PropertyStatus) => {
     if (!property) return
 
+    if (status === "scheduled") {
+      setIsScheduling(true)
+      return
+    }
+
     const newStatus = property.status === status ? "new" : status
     updateProperty(property.id, { status: newStatus })
     setProperty((prev) => prev ? { ...prev, status: newStatus } : null)
@@ -105,6 +113,32 @@ export function PropertyDetailPage() {
       toast.error("Erro ao atualizar status")
     } else {
       toast.success(`Status: ${STATUS_LABELS[newStatus]}`)
+    }
+  }
+
+  const handleSaveSchedule = async (date: string, time: string) => {
+    if (!property) return
+    setIsSavingSchedule(true)
+
+    const agendamento = time ? `${date}T${time}` : date
+    const updatedExtras = { ...(property.extras || {}), agendamento }
+    
+    // Optimistic update
+    updateProperty(property.id, { status: "scheduled", extras: updatedExtras })
+    setProperty((prev) => prev ? { ...prev, status: "scheduled", extras: updatedExtras } : null)
+
+    const { error } = await supabase
+      .from("properties")
+      .update({ status: "scheduled", extras: updatedExtras })
+      .eq("id", property.id)
+
+    setIsSavingSchedule(false)
+    if (error) {
+      updateProperty(property.id, { status: property.status, extras: property.extras })
+      setProperty((prev) => prev ? { ...prev, status: property.status, extras: property.extras } : null)
+      toast.error("Erro ao agendar visita")
+    } else {
+      toast.success("Visita agendada com sucesso")
     }
   }
 
@@ -207,6 +241,15 @@ export function PropertyDetailPage() {
             )}
             <span className="text-sm text-muted-foreground">· {MODALITY_LABELS[property.modality]}</span>
           </div>
+          {property.status === "scheduled" && property.extras?.agendamento && (
+            <div className="mt-2 flex items-center gap-1.5 text-sm font-medium text-purple-600 dark:text-purple-400 bg-purple-500/10 w-fit px-2.5 py-1 rounded-md">
+              <Calendar className="h-4 w-4" />
+              <span>
+                Agendado para: {new Date(property.extras.agendamento).toLocaleDateString('pt-BR', { timeZone: 'UTC' })}
+                {property.extras.agendamento.includes('T') && ` às ${property.extras.agendamento.split('T')[1]}`}
+              </span>
+            </div>
+          )}
           {(property.address || property.neighborhood) && (
             <button
               onClick={() => {
@@ -401,6 +444,15 @@ export function PropertyDetailPage() {
           </>
         )}
       </div>
+
+      <SchedulingDrawer
+        open={isScheduling}
+        onOpenChange={setIsScheduling}
+        onSave={handleSaveSchedule}
+        initialDate={property.extras?.agendamento ? property.extras.agendamento.split("T")[0] : ""}
+        initialTime={property.extras?.agendamento?.includes("T") ? property.extras.agendamento.split("T")[1] : ""}
+        isLoading={isSavingSchedule}
+      />
     </div>
   )
 }

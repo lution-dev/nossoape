@@ -61,6 +61,15 @@ export function PropertyCard({ property }: PropertyCardProps) {
         <div className="absolute right-2.5 top-2.5">
           <StatusBadge status={property.status} />
         </div>
+        {property.status === "scheduled" && property.extras?.agendamento && (
+          <div className="absolute left-2.5 top-2.5 rounded-full bg-purple-500/90 px-2 py-0.5 backdrop-blur-sm text-[10px] font-semibold text-white shadow-sm flex items-center gap-1">
+            <Calendar className="h-3 w-3" />
+            <span>
+              {new Date(property.extras.agendamento).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', timeZone: 'UTC' })}
+              {property.extras.agendamento.includes('T') && ` ${property.extras.agendamento.split('T')[1]}`}
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Content */}
