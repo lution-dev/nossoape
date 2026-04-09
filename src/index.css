@@ -162,6 +162,12 @@
     --divergence: oklch(0.637 0.237 25.331);
 }
 
+@keyframes extracting {
+  0%   { transform: translateX(-100%) scaleX(0.4); }
+  50%  { transform: translateX(30%) scaleX(0.7); }
+  100% { transform: translateX(100%) scaleX(0.4); }
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;

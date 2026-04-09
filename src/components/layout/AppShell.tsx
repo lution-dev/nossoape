@@ -5,7 +5,7 @@ import { ClipboardBanner } from "@/components/shared/ClipboardBanner"
 // Pages that should NOT show the default header
 const STANDALONE_PAGES = ["/login", "/onboarding"]
 // Pages that should show a back button in the header
-const BACK_PAGES = ["/search"]
+const BACK_PAGES = ["/search", "/profile"]
 
 export function AppShell() {
   const location = useLocation()

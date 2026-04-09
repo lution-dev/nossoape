@@ -63,6 +63,16 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
     // Bootstrap: use getSession() once, then subscribe for future changes
     const init = async () => {
+      // ── Fast-path for Vite HMR ──
+      // On hot-reload, useRef resets but the Zustand store keeps its state.
+      // If we already have a user + board, skip getSession() entirely —
+      // setting isLoading=true here would flash a spinner and discard data.
+      const current = store()
+      if (current.isAuthenticated && current.board) {
+        console.log("[Auth] HMR fast-path — already authenticated, skipping init")
+        return
+      }
+
       store().setLoading(true)
       try {
         const { data: { session } } = await supabase.auth.getSession()
