@@ -173,8 +173,45 @@ serve(async (req: Request) => {
     const htmlTitle = html.match(/<title[^>]*>([^<]*)<\/title>/i)?.[1] || ""
     const title = (ogTitle || htmlTitle).trim()
 
-    // Image
-    const imageUrl = getMetaContent("og:image")
+    // Helper functions for entity parsing inside edge function
+    const decodeHtmlEntities = (str: string): string => {
+      if (!str) return ""
+      return str
+        .replace(/&#(\d+);/g, (_, n) => String.fromCharCode(parseInt(n)))
+        .replace(/&amp;/g, "&")
+        .replace(/&lt;/g, "<")
+        .replace(/&gt;/g, ">")
+        .replace(/&quot;/g, '"')
+        .replace(/&apos;/g, "'")
+        .replace(/\\u([0-9a-fA-F]{4})/g, (_, hex) => String.fromCharCode(parseInt(hex, 16)))
+    }
+
+    const resolveUrl = (src: string, baseUrl: string): string => {
+      if (!src) return ""
+      if (src.startsWith("http://") || src.startsWith("https://")) return src
+      if (src.startsWith("//")) return "https:" + src
+      try { return new URL(src, baseUrl).href } catch { return src }
+    }
+
+    // Image extraction logic matching the frontend robust version
+    let imageUrl = getMetaContent("og:image")
+    if (!imageUrl) imageUrl = getMetaContent("twitter:image")
+    if (!imageUrl) {
+      const jsonLdImgMatch = html.match(/"image"\s*:\s*(?:\[\s*"([^"]+)"|"\s*([^"]+)\s*")/i)
+      const jsonLdImg = jsonLdImgMatch?.[1] || jsonLdImgMatch?.[2]
+      if (jsonLdImg) imageUrl = decodeHtmlEntities(jsonLdImg)
+    }
+    if (!imageUrl) {
+      // 4. First generic real image in HTML (fallback)
+      const imgMatches = html.matchAll(/<img[^>]+src=["']([^"']+)["'][^>]*/gi)
+      for (const match of imgMatches) {
+        const src = match[1]
+        if (src && !src.includes("logo") && !src.includes("icon") && !src.includes("svg") && !src.includes("avatar") && !src.includes("pixel") && !src.includes("1x1") && !src.includes("blurred") && (src.includes(".jpg") || src.includes(".jpeg") || src.includes(".png") || src.includes(".webp") || src.includes("IMG") || src.includes("/img/") || src.includes("/image") || src.includes("cdn"))) {
+          imageUrl = src; break;
+        }
+      }
+    }
+    imageUrl = resolveUrl(imageUrl, url)
 
     // Description
     const ogDesc = getMetaContent("og:description")

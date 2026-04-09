@@ -251,6 +251,7 @@ function extractFromTitle(title: string): Partial<ExtractedData> {
 }
 
 function decodeHtmlEntities(str: string): string {
+  if (!str) return ""
   return str
     .replace(/&#(\d+);/g, (_, n) => String.fromCharCode(parseInt(n)))
     .replace(/&amp;/g, "&")
@@ -261,6 +262,7 @@ function decodeHtmlEntities(str: string): string {
     .replace(/&ndash;/g, "–")
     .replace(/&mdash;/g, "—")
     .replace(/&nbsp;/g, " ")
+    .replace(/\\u([0-9a-fA-F]{4})/g, (_, hex) => String.fromCharCode(parseInt(hex, 16)))
 }
 
 function resolveUrl(src: string, baseUrl: string): string {
@@ -292,7 +294,7 @@ function extractImageFromHtml(html: string, pageUrl: string): string {
   // 3. JSON-LD structured data image (string or array)
   const jsonLdImgMatch = html.match(/"image"\s*:\s*(?:\[\s*"([^"]+)"|"\s*([^"]+)\s*")/i)
   const jsonLdImg = jsonLdImgMatch?.[1] || jsonLdImgMatch?.[2]
-  if (jsonLdImg) return resolveUrl(jsonLdImg, pageUrl)
+  if (jsonLdImg) return resolveUrl(decodeHtmlEntities(jsonLdImg), pageUrl)
 
   // 4. First generic real image in HTML (fallback)
   const imgMatches = html.matchAll(/<img[^>]+src=["']([^"']+)["'][^>]*/gi)
