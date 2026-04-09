@@ -106,18 +106,20 @@ export function EditPropertyPage() {
   return (
     <div className="pb-[calc(2rem+env(safe-area-inset-bottom))]">
       {/* Header */}
-      <div className="sticky top-0 z-40 flex items-center justify-between border-b border-border bg-background/80 px-4 h-14 backdrop-blur-sm">
-        <button onClick={() => navigate(-1)} className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:text-foreground">
-          <ArrowLeft className="h-5 w-5" />
-        </button>
-        <span className="text-sm font-medium">Editar Imóvel</span>
-        <button
-          onClick={handleSubmit}
-          disabled={isSubmitting || !title.trim()}
-          className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:text-foreground disabled:opacity-40"
-        >
-          <Save className="h-5 w-5" />
-        </button>
+      <div className="sticky top-0 z-40 border-b border-border bg-background/80 backdrop-blur-sm pt-[env(safe-area-inset-top)]">
+        <div className="flex items-center justify-between px-4 h-14">
+          <button onClick={() => navigate(-1)} className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:text-foreground">
+            <ArrowLeft className="h-5 w-5" />
+          </button>
+          <span className="text-sm font-medium">Editar Imóvel</span>
+          <button
+            onClick={handleSubmit}
+            disabled={isSubmitting || !title.trim()}
+            className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:text-foreground disabled:opacity-40"
+          >
+            <Save className="h-5 w-5" />
+          </button>
+        </div>
       </div>
 
       {/* Form */}

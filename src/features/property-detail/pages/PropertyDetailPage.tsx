@@ -138,38 +138,40 @@ export function PropertyDetailPage() {
   return (
     <div className="pb-[calc(2rem+env(safe-area-inset-bottom))]">
       {/* Header */}
-      <div className="sticky top-0 z-40 flex items-center justify-between border-b border-border bg-background/80 px-4 h-14 backdrop-blur-sm">
-        <button onClick={() => navigate(-1)} className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:text-foreground">
-          <ArrowLeft className="h-5 w-5" />
-        </button>
-        <div className="flex items-center gap-2">
-          <button onClick={() => navigate(`/property/${property.id}/edit`)} className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:text-foreground">
-            <Pencil className="h-4 w-4" />
+      <div className="sticky top-0 z-40 border-b border-border bg-background/80 backdrop-blur-sm pt-[env(safe-area-inset-top)]">
+        <div className="flex items-center justify-between px-4 h-14">
+          <button onClick={() => navigate(-1)} className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:text-foreground">
+            <ArrowLeft className="h-5 w-5" />
           </button>
-          {property.url && (
-            <button onClick={() => window.open(property.url, "_blank")} className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:text-foreground">
-              <ExternalLink className="h-4 w-4" />
+          <div className="flex items-center gap-2">
+            <button onClick={() => navigate(`/property/${property.id}/edit`)} className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:text-foreground">
+              <Pencil className="h-4 w-4" />
             </button>
-          )}
-          <Dialog>
-            <DialogTrigger asChild>
-              <button className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:text-destructive">
-                <Trash2 className="h-4 w-4" />
+            {property.url && (
+              <button onClick={() => window.open(property.url, "_blank")} className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:text-foreground">
+                <ExternalLink className="h-4 w-4" />
               </button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Excluir imóvel?</DialogTitle>
-                <DialogDescription>Esta ação não pode ser desfeita.</DialogDescription>
-              </DialogHeader>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => {}}>Cancelar</Button>
-                <Button variant="destructive" onClick={handleDelete} disabled={isDeleting}>
-                  {isDeleting ? "Excluindo..." : "Excluir"}
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+            )}
+            <Dialog>
+              <DialogTrigger asChild>
+                <button className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:text-destructive">
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Excluir imóvel?</DialogTitle>
+                  <DialogDescription>Esta ação não pode ser desfeita.</DialogDescription>
+                </DialogHeader>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => {}}>Cancelar</Button>
+                  <Button variant="destructive" onClick={handleDelete} disabled={isDeleting}>
+                    {isDeleting ? "Excluindo..." : "Excluir"}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </div>
         </div>
       </div>
 

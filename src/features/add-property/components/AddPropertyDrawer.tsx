@@ -30,9 +30,11 @@ function extractDomain(url: string): string {
 interface AddPropertyDrawerProps {
   open: boolean
   onOpenChange: (open: boolean) => void
+  initialUrl?: string
+  onInitialUrlConsume?: () => void
 }
 
-export function AddPropertyDrawer({ open, onOpenChange }: AddPropertyDrawerProps) {
+export function AddPropertyDrawer({ open, onOpenChange, initialUrl, onInitialUrlConsume }: AddPropertyDrawerProps) {
   const { addProperty } = usePropertyStore()
   const { board, user } = useAuthStore()
   const [linkUrl, setLinkUrl] = useState("")
@@ -51,9 +53,13 @@ export function AddPropertyDrawer({ open, onOpenChange }: AddPropertyDrawerProps
   const [modality, setModality] = useState<"rent" | "buy">("rent")
   const [notes, setNotes] = useState("")
 
-  // Reset form when drawer closes
+  // Reset form when drawer closes, or handle initialUrl when it opens
   useEffect(() => {
-    if (!open) {
+    if (open && initialUrl) {
+      setLinkUrl(initialUrl)
+      extract(initialUrl)
+      if (onInitialUrlConsume) onInitialUrlConsume()
+    } else if (!open) {
       setLinkUrl("")
       setTitle("")
       setPrice("")
@@ -68,7 +74,7 @@ export function AddPropertyDrawer({ open, onOpenChange }: AddPropertyDrawerProps
       setIsSubmitting(false)
       reset()
     }
-  }, [open, reset])
+  }, [open, initialUrl, extract, onInitialUrlConsume, reset])
 
   // When extractor returns data, populate fields
   useEffect(() => {
