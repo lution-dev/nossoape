@@ -1,22 +1,17 @@
-import { useState } from "react"
 import { motion } from "framer-motion"
 import { Plus } from "lucide-react"
 import { AddPropertyDrawer } from "@/features/add-property/components/AddPropertyDrawer"
 
+interface FABProps {
+  drawerOpen: boolean
+  onDrawerOpenChange: (open: boolean) => void
+}
 
-
-export function FAB() {
-  const [open, setOpen] = useState(false)
-  const [initialUrl, setInitialUrl] = useState<string | undefined>(undefined)
-
-  const handleFabClick = () => {
-    setOpen(true)
-  }
-
+export function FAB({ drawerOpen, onDrawerOpenChange }: FABProps) {
   return (
     <>
       <motion.button
-        onClick={handleFabClick}
+        onClick={() => onDrawerOpenChange(true)}
         className="fixed bottom-[calc(1.5rem+env(safe-area-inset-bottom))] right-4 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-foreground text-background shadow-lg"
         whileTap={{ scale: 0.9 }}
         whileHover={{ scale: 1.05 }}
@@ -28,12 +23,9 @@ export function FAB() {
       </motion.button>
 
       <AddPropertyDrawer
-        open={open}
-        onOpenChange={setOpen}
-        initialUrl={initialUrl}
-        onInitialUrlConsume={() => setInitialUrl(undefined)}
+        open={drawerOpen}
+        onOpenChange={onDrawerOpenChange}
       />
     </>
   )
 }
-

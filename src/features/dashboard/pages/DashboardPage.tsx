@@ -26,6 +26,7 @@ export function DashboardPage() {
   const { properties, fetchProperties, isLoading } = usePropertyStore()
   const { board } = useAuthStore()
   const [activeTab, setActiveTab] = useState<TabFilter>("all")
+  const [drawerOpen, setDrawerOpen] = useState(false)
   const navigate = useNavigate()
 
   // Busca imóveis do Supabase ao montar a página.
@@ -100,6 +101,7 @@ export function DashboardPage() {
           <EmptyState
             message={activeTab === "all" ? "Nenhum imóvel ainda" : `Nenhum imóvel ${STATUS_LABELS[activeTab as PropertyStatus]?.toLowerCase()}`}
             description={activeTab === "all" ? "Adicione seu primeiro imóvel para começar" : "Mude o status de um imóvel para vê-lo aqui"}
+            onAddClick={activeTab === "all" ? () => setDrawerOpen(true) : undefined}
           />
         ) : activeTab === "scheduled" ? (
           <ScheduleCalendar properties={filtered} onPropertyClick={(p) => navigate(`/property/${p.id}`)} />
@@ -113,7 +115,7 @@ export function DashboardPage() {
       </div>
 
       {/* FAB */}
-      <FAB />
+      <FAB drawerOpen={drawerOpen} onDrawerOpenChange={setDrawerOpen} />
     </div>
   )
 }

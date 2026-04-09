@@ -42,26 +42,6 @@ export function AddPropertyDrawer({ open, onOpenChange, initialUrl, onInitialUrl
   const [showEdit, setShowEdit] = useState(false)
   const { data: extractedData, isExtracting, error: extractError, extract, reset } = useLinkExtractor()
 
-  // Snap points: small (link input only) → full (content loaded)
-  const SNAP_SMALL = 0.35
-  const SNAP_FULL = 1
-  const snapPoints = [SNAP_SMALL, SNAP_FULL]
-  const [activeSnap, setActiveSnap] = useState<number | string | null>(SNAP_SMALL)
-
-  // Expand to full when extracting or data arrives
-  useEffect(() => {
-    if (isExtracting || extractedData || extractError || showEdit) {
-      setActiveSnap(SNAP_FULL)
-    }
-  }, [isExtracting, extractedData, extractError, showEdit])
-
-  // Reset snap on close
-  useEffect(() => {
-    if (!open) {
-      setActiveSnap(SNAP_SMALL)
-    }
-  }, [open])
-
   // Editable fields - populated from extraction
   const [title, setTitle] = useState("")
   const [price, setPrice] = useState("")
@@ -202,17 +182,10 @@ export function AddPropertyDrawer({ open, onOpenChange, initialUrl, onInitialUrl
   const toggleLabel = extractedData ? "Editar dados" : "Adicionar manualmente"
 
   return (
-    <Drawer
-      open={open}
-      onOpenChange={onOpenChange}
-      snapPoints={snapPoints}
-      activeSnapPoint={activeSnap}
-      setActiveSnapPoint={setActiveSnap}
-      fadeFromIndex={1}
-    >
+    <Drawer open={open} onOpenChange={onOpenChange}>
       <DrawerContent className="max-h-[92vh]">
         <DrawerTitle className="sr-only">Adicionar imóvel</DrawerTitle>
-        <div className={`${activeSnap === SNAP_FULL ? 'overflow-y-auto' : 'overflow-hidden'} px-4 pt-2 pb-12 space-y-6`}>
+        <div className="overflow-y-auto px-4 pt-2 pb-12 space-y-6">
           {/* Link Input */}
           <LinkInput
             value={linkUrl}
