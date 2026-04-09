@@ -50,6 +50,7 @@ export function PropertyCard({ property }: PropertyCardProps) {
             src={property.image_url}
             alt={property.title}
             className="h-full w-full object-cover"
+            referrerPolicy="no-referrer"
           />
         ) : (
           <div className="flex h-full w-full items-center justify-center">

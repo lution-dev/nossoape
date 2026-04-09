@@ -60,6 +60,7 @@ export function PropertyPreview({ data, isLoading, error }: PropertyPreviewProps
             src={data.imageUrl}
             alt={data.title}
             className="h-full w-full object-cover"
+            referrerPolicy="no-referrer"
           />
         ) : (
           <div className="flex h-full w-full items-center justify-center">
