@@ -2,7 +2,7 @@ import { useState } from "react"
 import { useNavigate } from "react-router"
 import { StatusBadge } from "@/components/shared/StatusBadge"
 import { Badge } from "@/components/ui/badge"
-import { MapPin, Home, Receipt, X, Bed, Bath, Car, Ruler } from "lucide-react"
+import { MapPin, Home, Receipt, X, Bed, Bath, Car, Ruler, Calendar } from "lucide-react"
 import type { Property } from "@/lib/types"
 import { MODALITY_LABELS } from "@/lib/constants"
 

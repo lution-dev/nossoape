@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react"
-import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, MessageSquareShare } from "lucide-react"
+import { Calendar as CalendarIcon, ChevronLeft, ChevronRight } from "lucide-react"
 import { cn } from "@/lib/utils"
 import type { Property } from "@/lib/types"
 
