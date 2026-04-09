@@ -3,17 +3,7 @@ import { motion } from "framer-motion"
 import { Plus } from "lucide-react"
 import { AddPropertyDrawer } from "@/features/add-property/components/AddPropertyDrawer"
 
-const REAL_ESTATE_DOMAINS = [
-  "zapimoveis", "quintoandar", "vivareal", "imovelweb",
-  "chavesnamao", "olx.com.br", "imoview", "loft.com",
-  "netimóveis", "sinagimoveis", "grupozap", "imobiliaria",
-  "imoveis", "alugue", "compre",
-]
 
-function isRealEstateUrl(text: string): boolean {
-  if (!text || !text.startsWith("http")) return false
-  return REAL_ESTATE_DOMAINS.some((d) => text.includes(d))
-}
 
 export function FAB() {
   const [open, setOpen] = useState(false)
