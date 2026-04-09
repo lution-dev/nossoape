@@ -1,5 +1,6 @@
 import { Outlet, useLocation } from "react-router"
 import { Header } from "./Header"
+import { ClipboardBanner } from "@/components/shared/ClipboardBanner"
 
 // Pages that should NOT show the default header
 const STANDALONE_PAGES = ["/login", "/onboarding"]
@@ -21,6 +22,7 @@ export function AppShell() {
   if (isPropertyDetail) {
     return (
       <div className="min-h-svh bg-background">
+        <ClipboardBanner />
         <Outlet />
       </div>
     )
@@ -29,6 +31,7 @@ export function AppShell() {
   return (
     <div className="min-h-svh bg-background">
       <Header showBack={showBack} />
+      <ClipboardBanner />
       <main className="mx-auto max-w-lg pb-[calc(1.5rem+env(safe-area-inset-bottom))]">
         <Outlet />
       </main>
