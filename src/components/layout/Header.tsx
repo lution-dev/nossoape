@@ -1,6 +1,6 @@
 import { useLocation, useNavigate } from "react-router"
 import { ArrowLeft } from "lucide-react"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { APP_NAME } from "@/lib/constants"
 import { useAuthStore } from "@/stores/authStore"
 
@@ -17,6 +17,7 @@ export function Header({ showBack = false, title }: HeaderProps) {
 
   const displayTitle = title || (isHome ? APP_NAME : "")
   const initial = profile?.display_name?.charAt(0)?.toUpperCase() || "?"
+  const avatarUrl = profile?.avatar_url
 
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-background/80 backdrop-blur-sm pt-[env(safe-area-inset-top)]">
@@ -38,6 +39,7 @@ export function Header({ showBack = false, title }: HeaderProps) {
         {isHome && (
           <button onClick={() => navigate("/profile")} className="rounded-full">
             <Avatar className="h-8 w-8">
+              <AvatarImage src={avatarUrl ?? undefined} alt={profile?.display_name ?? ""} />
               <AvatarFallback className="bg-secondary text-xs font-medium">
                 {initial}
               </AvatarFallback>

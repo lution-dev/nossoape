@@ -12,6 +12,16 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const { fetchProfile } = useAuth()
 
   useEffect(() => {
+    const syncAvatarIfNeeded = async (userId: string, googleAvatarUrl?: string) => {
+      if (!googleAvatarUrl) return
+      // Update profile avatar_url if not already set (silent, best-effort)
+      await supabase
+        .from("users_profile")
+        .update({ avatar_url: googleAvatarUrl })
+        .eq("id", userId)
+        .is("avatar_url", null)
+    }
+
     // Initial session check
     const initSession = async () => {
       setLoading(true)
@@ -22,7 +32,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
         if (session?.user) {
           setUser({ id: session.user.id, email: session.user.email! })
-          await fetchProfile(session.user.id)
+          const profile = await fetchProfile(session.user.id)
+          // If profile has no avatar, sync from Google metadata
+          if (!profile?.avatar_url) {
+            const googleAvatar =
+              session.user.user_metadata?.avatar_url ||
+              session.user.user_metadata?.picture
+            await syncAvatarIfNeeded(session.user.id, googleAvatar)
+            if (googleAvatar) await fetchProfile(session.user.id)
+          }
         }
       } finally {
         setLoading(false)
@@ -37,7 +55,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
     } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === "SIGNED_IN" && session?.user) {
         setUser({ id: session.user.id, email: session.user.email! })
-        await fetchProfile(session.user.id)
+        const profile = await fetchProfile(session.user.id)
+        if (!profile?.avatar_url) {
+          const googleAvatar =
+            session.user.user_metadata?.avatar_url ||
+            session.user.user_metadata?.picture
+          await syncAvatarIfNeeded(session.user.id, googleAvatar)
+          if (googleAvatar) await fetchProfile(session.user.id)
+        }
       } else if (event === "SIGNED_OUT") {
         setUser(null)
       }

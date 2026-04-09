@@ -2,7 +2,7 @@ import { useAuthStore } from "@/stores/authStore"
 import { useAuth } from "@/features/auth/hooks/useAuth"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Separator } from "@/components/ui/separator"
 import { toast } from "sonner"
 import { Copy, LogOut, Users } from "lucide-react"
@@ -30,6 +30,7 @@ export function ProfilePage() {
       {/* User Info */}
       <div className="flex flex-col items-center gap-3">
         <Avatar className="h-20 w-20">
+          <AvatarImage src={profile?.avatar_url ?? undefined} alt={profile?.display_name ?? ""} />
           <AvatarFallback className="bg-secondary text-2xl font-semibold">
             {initial}
           </AvatarFallback>
@@ -73,6 +74,7 @@ export function ProfilePage() {
             {partner ? (
               <div className="flex items-center gap-3 rounded-lg border border-border p-3">
                 <Avatar className="h-8 w-8">
+                  <AvatarImage src={partner.avatar_url ?? undefined} alt={partner.display_name ?? ""} />
                   <AvatarFallback className="bg-secondary text-xs">
                     {partner.display_name?.charAt(0)?.toUpperCase()}
                   </AvatarFallback>
