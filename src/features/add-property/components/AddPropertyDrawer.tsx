@@ -180,10 +180,10 @@ export function AddPropertyDrawer({ open, onOpenChange, initialUrl, onInitialUrl
   const toggleLabel = extractedData ? "Editar dados" : "Adicionar manualmente"
 
   return (
-    <Drawer open={open} onOpenChange={onOpenChange}>
-      <DrawerContent className="max-h-[92vh]">
+    <Drawer open={open} onOpenChange={onOpenChange} repositionInputs={false}>
+      <DrawerContent className="max-h-[92vh] h-[85vh] flex flex-col">
         <DrawerTitle className="sr-only">Adicionar imóvel</DrawerTitle>
-        <div className="overflow-y-auto px-4 pt-2 pb-12 space-y-6">
+        <div className="flex-1 overflow-y-auto px-4 pt-2 pb-12 space-y-6">
           {/* Link Input */}
           <LinkInput
             value={linkUrl}
