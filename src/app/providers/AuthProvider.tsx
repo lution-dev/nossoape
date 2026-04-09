@@ -7,97 +7,111 @@ interface AuthProviderProps {
 }
 
 export function AuthProvider({ children }: AuthProviderProps) {
-  const { setUser, setProfile, setBoard, setBoardMembers, setLoading } = useAuthStore()
-  // Use a ref so the effect never has stale deps and never re-runs
-  const storeRef = useRef({ setUser, setProfile, setBoard, setBoardMembers, setLoading })
-  useEffect(() => {
-    storeRef.current = { setUser, setProfile, setBoard, setBoardMembers, setLoading }
-  })
+  const storeRef = useRef(useAuthStore.getState())
+  useEffect(() => useAuthStore.subscribe((s) => { storeRef.current = s }), [])
 
   useEffect(() => {
-    const { setUser, setProfile, setBoard, setBoardMembers, setLoading } = storeRef.current
+    let cancelled = false
 
-    /** Fetch the user's full profile + board, store in Zustand */
+    /** Fetch the user's full profile + board — NEVER throws, always resolves */
     const loadProfile = async (userId: string) => {
-      const { data: profile } = await supabase
-        .from("users_profile")
-        .select("*")
-        .eq("id", userId)
-        .single()
+      try {
+        const { setProfile, setBoard, setBoardMembers } = storeRef.current
 
-      if (profile) {
+        const { data: profile, error: profileError } = await supabase
+          .from("users_profile")
+          .select("*")
+          .eq("id", userId)
+          .single()
+
+        if (profileError) {
+          console.warn("[AuthProvider] loadProfile error:", profileError.message)
+          return null
+        }
+
+        if (!profile || cancelled) return profile
+
         setProfile(profile)
+
         if (profile.board_id) {
           const { data: board } = await supabase
             .from("boards")
             .select("*")
             .eq("id", profile.board_id)
             .single()
-          if (board) {
+
+          if (board && !cancelled) {
             setBoard(board)
             const { data: members } = await supabase
               .from("users_profile")
               .select("*")
               .eq("board_id", board.id)
-            if (members) setBoardMembers(members)
+            if (members && !cancelled) setBoardMembers(members)
           }
         }
+        return profile
+      } catch (err) {
+        console.warn("[AuthProvider] loadProfile unexpected error:", err)
+        return null
       }
-      return profile
     }
 
-    /** Sync Google avatar if not set yet (best-effort, silent) */
-    const syncAvatar = async (userId: string, googleAvatarUrl?: string) => {
-      if (!googleAvatarUrl) return
-      await supabase
-        .from("users_profile")
-        .update({ avatar_url: googleAvatarUrl })
-        .eq("id", userId)
-        .is("avatar_url", null)
-    }
-
-    /** One-time session bootstrap on mount */
-    const initSession = async () => {
-      setLoading(true)
+    /** Sync Google avatar if missing (best-effort, silent) */
+    const syncAvatar = async (userId: string, avatarUrl?: string) => {
+      if (!avatarUrl) return
       try {
-        const { data: { session } } = await supabase.auth.getSession()
-        if (session?.user) {
-          setUser({ id: session.user.id, email: session.user.email! })
-          const profile = await loadProfile(session.user.id)
-          if (!profile?.avatar_url) {
-            const googleAvatar =
-              session.user.user_metadata?.avatar_url ||
-              session.user.user_metadata?.picture
-            await syncAvatar(session.user.id, googleAvatar)
-            if (googleAvatar) await loadProfile(session.user.id)
-          }
-        }
-      } finally {
-        setLoading(false)
+        await supabase
+          .from("users_profile")
+          .update({ avatar_url: avatarUrl })
+          .eq("id", userId)
+          .is("avatar_url", null)
+      } catch { /* best-effort, ignore */ }
+    }
+
+    /** Handle an authenticated session object */
+    const handleSession = async (
+      session: { user: { id: string; email?: string; user_metadata?: Record<string, string> } } | null
+    ) => {
+      if (!session?.user || cancelled) return
+      const { setUser } = storeRef.current
+      setUser({ id: session.user.id, email: session.user.email ?? "" })
+
+      const profile = await loadProfile(session.user.id)
+      if (!profile?.avatar_url && !cancelled) {
+        const googleAvatar =
+          session.user.user_metadata?.["avatar_url"] ||
+          session.user.user_metadata?.["picture"]
+        await syncAvatar(session.user.id, googleAvatar)
+        if (googleAvatar) await loadProfile(session.user.id)
       }
     }
 
-    initSession()
-
-    // Listen for auth changes (OAuth redirect fires SIGNED_IN here)
+    // Use onAuthStateChange as the SINGLE source of truth.
+    // It fires reliably for: initial session restore, SIGNED_IN, SIGNED_OUT.
+    // We do NOT call initSession separately to avoid race conditions.
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        if (cancelled) return
         const { setUser, setProfile, setBoard, setBoardMembers, setLoading } =
           storeRef.current
-        if (event === "SIGNED_IN" && session?.user) {
+
+        console.debug("[AuthProvider] event:", event)
+
+        if (event === "INITIAL_SESSION") {
+          // Fires once on mount with the current session (or null)
           setLoading(true)
           try {
-            setUser({ id: session.user.id, email: session.user.email! })
-            const profile = await loadProfile(session.user.id)
-            if (!profile?.avatar_url) {
-              const googleAvatar =
-                session.user.user_metadata?.avatar_url ||
-                session.user.user_metadata?.picture
-              await syncAvatar(session.user.id, googleAvatar)
-              if (googleAvatar) await loadProfile(session.user.id)
-            }
+            await handleSession(session)
           } finally {
-            setLoading(false)
+            if (!cancelled) setLoading(false)
+          }
+        } else if (event === "SIGNED_IN") {
+          // Fires on OAuth callback / explicit sign-in
+          setLoading(true)
+          try {
+            await handleSession(session)
+          } finally {
+            if (!cancelled) setLoading(false)
           }
         } else if (event === "SIGNED_OUT") {
           setUser(null)
@@ -108,9 +122,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
       }
     )
 
-    return () => { subscription.unsubscribe() }
+    return () => {
+      cancelled = true
+      subscription.unsubscribe()
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []) // Empty deps — runs once on mount, uses storeRef for fresh store access
+  }, [])
 
   return <>{children}</>
 }
