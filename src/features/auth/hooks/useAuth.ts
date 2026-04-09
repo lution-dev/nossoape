@@ -89,11 +89,14 @@ export function useAuth() {
     async (userId: string, displayName: string, avatarUrl?: string) => {
       const { data, error } = await supabase
         .from("users_profile")
-        .insert({
-          id: userId,
-          display_name: displayName,
-          avatar_url: avatarUrl || null,
-        })
+        .upsert(
+          {
+            id: userId,
+            display_name: displayName,
+            avatar_url: avatarUrl || null,
+          },
+          { onConflict: "id" }
+        )
         .select()
         .single()
 

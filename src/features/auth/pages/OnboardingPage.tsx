@@ -13,15 +13,25 @@ import { Home, Users } from "lucide-react"
 
 export function OnboardingPage() {
   const navigate = useNavigate()
-  const { user, profile } = useAuthStore()
+  const { user, profile, board } = useAuthStore()
   const { createProfile, createBoard, joinBoard } = useAuth()
 
   const [step, setStep] = useState<"name" | "choice" | "create" | "join">(
     profile ? "choice" : "name"
   )
-  const [displayName, setDisplayName] = useState("")
+  const [displayName, setDisplayName] = useState(profile?.display_name || "")
   const [inviteCode, setInviteCode] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
+
+  // If the user somehow lands here but already has everything set up, send them home
+  useEffect(() => {
+    if (profile && board) {
+      navigate("/", { replace: true })
+    } else if (profile && step === "name") {
+      // Profile exists but board doesn't — skip the name step
+      setStep("choice")
+    }
+  }, [profile, board, navigate, step])
 
   const handleSetName = async () => {
     if (!displayName.trim() || !user) return

@@ -49,19 +49,26 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
     initSession()
 
-    // Listen for auth changes
+    // Listen for auth changes (OAuth redirect fires SIGNED_IN here)
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === "SIGNED_IN" && session?.user) {
-        setUser({ id: session.user.id, email: session.user.email! })
-        const profile = await fetchProfile(session.user.id)
-        if (!profile?.avatar_url) {
-          const googleAvatar =
-            session.user.user_metadata?.avatar_url ||
-            session.user.user_metadata?.picture
-          await syncAvatarIfNeeded(session.user.id, googleAvatar)
-          if (googleAvatar) await fetchProfile(session.user.id)
+        // Set loading BEFORE fetching profile so PrivateRoute shows spinner
+        // instead of redirecting to /login or /onboarding prematurely
+        setLoading(true)
+        try {
+          setUser({ id: session.user.id, email: session.user.email! })
+          const profile = await fetchProfile(session.user.id)
+          if (!profile?.avatar_url) {
+            const googleAvatar =
+              session.user.user_metadata?.avatar_url ||
+              session.user.user_metadata?.picture
+            await syncAvatarIfNeeded(session.user.id, googleAvatar)
+            if (googleAvatar) await fetchProfile(session.user.id)
+          }
+        } finally {
+          setLoading(false)
         }
       } else if (event === "SIGNED_OUT") {
         setUser(null)
