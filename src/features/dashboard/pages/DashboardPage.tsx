@@ -5,8 +5,10 @@ import { useRealtimeProperties } from "@/hooks/useRealtime"
 import { PropertyCard } from "@/components/shared/PropertyCard"
 import { EmptyState } from "@/components/shared/EmptyState"
 import { FAB } from "@/components/shared/FAB"
+import { ScheduleCalendar } from "../components/ScheduleCalendar"
 import { STATUS_LABELS, type PropertyStatus } from "@/lib/constants"
 import { cn } from "@/lib/utils"
+import { useNavigate } from "react-router"
 
 type TabFilter = "all" | PropertyStatus
 
@@ -24,6 +26,7 @@ export function DashboardPage() {
   const { properties, fetchProperties, isLoading } = usePropertyStore()
   const { board } = useAuthStore()
   const [activeTab, setActiveTab] = useState<TabFilter>("all")
+  const navigate = useNavigate()
 
   // Busca imóveis do Supabase ao montar a página
   useEffect(() => {
@@ -50,6 +53,7 @@ export function DashboardPage() {
         <div className="flex gap-2">
           {tabs.map((tab) => {
             const count = getCount(tab.key)
+            if (tab.key === "scheduled" && count === 0) return null
             const isActive = activeTab === tab.key
             return (
               <button
@@ -93,6 +97,8 @@ export function DashboardPage() {
             message={activeTab === "all" ? "Nenhum imóvel ainda" : `Nenhum imóvel ${STATUS_LABELS[activeTab as PropertyStatus]?.toLowerCase()}`}
             description={activeTab === "all" ? "Adicione seu primeiro imóvel para começar" : "Mude o status de um imóvel para vê-lo aqui"}
           />
+        ) : activeTab === "scheduled" ? (
+          <ScheduleCalendar properties={filtered} onPropertyClick={(p) => navigate(`/property/${p.id}`)} />
         ) : (
           <div className="space-y-3">
             {filtered.map((property) => (
