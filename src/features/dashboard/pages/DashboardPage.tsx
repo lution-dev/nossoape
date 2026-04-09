@@ -28,10 +28,14 @@ export function DashboardPage() {
   const [activeTab, setActiveTab] = useState<TabFilter>("all")
   const navigate = useNavigate()
 
-  // Busca imóveis do Supabase ao montar a página
+  // Busca imóveis do Supabase ao montar a página.
+  // Guard: se já temos imóveis no store E o board não mudou, não re-fetch —
+  // evita que o HMR do Vite apague os dados a cada alteração de código.
   useEffect(() => {
-    fetchProperties(board?.id)
-  }, [board?.id, fetchProperties])
+    if (!board?.id) return
+    if (properties.length > 0) return // Dados já carregados — HMR safe
+    fetchProperties(board.id)
+  }, [board?.id, fetchProperties, properties.length])
 
   // Realtime sync — escuta mudanças do board do casal
   useRealtimeProperties(board?.id)

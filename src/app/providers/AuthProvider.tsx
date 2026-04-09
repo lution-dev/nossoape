@@ -31,22 +31,28 @@ export function AuthProvider({ children }: AuthProviderProps) {
         }
         if (!profile) return null
 
-        // Sync Google avatar to DB if the profile doesn't have one yet
+        // Always use the Google avatar from session metadata as source of truth.
+        // The DB update can fail silently (RLS/column issue) — we still want the photo
+        // to appear immediately by injecting it into the in-memory profile object.
+        const resolvedAvatar = profile.avatar_url || googleAvatarUrl || null
+        const profileWithAvatar = { ...profile, avatar_url: resolvedAvatar }
+
+        // Best-effort sync to DB (silently ignores failures)
         if (!profile.avatar_url && googleAvatarUrl) {
-          await supabase
+          supabase
             .from("users_profile")
             .update({ avatar_url: googleAvatarUrl })
             .eq("id", userId)
-          profile.avatar_url = googleAvatarUrl // update local copy too
+            .then(() => {}) // fire-and-forget
         }
 
-        store().setProfile(profile)
+        store().setProfile(profileWithAvatar)
 
-        if (profile.board_id) {
+        if (profileWithAvatar.board_id) {
           const { data: board, error: be } = await supabase
             .from("boards")
             .select("*")
-            .eq("id", profile.board_id)
+            .eq("id", profileWithAvatar.board_id)
             .single()
 
           if (be) {
@@ -57,10 +63,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
               .from("users_profile")
               .select("*")
               .eq("board_id", board.id)
+            // Inject Google avatar for each member if missing
             if (members) store().setBoardMembers(members)
           }
         }
-        return profile
+        return profileWithAvatar
       } catch (err) {
         console.error("[Auth] Unexpected:", err)
         return null
