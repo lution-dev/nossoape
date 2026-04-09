@@ -66,8 +66,9 @@ export function ClipboardBanner() {
       lastSeenRef.current = url
       localStorage.setItem("last_clipboard_url", url)
       setBannerUrl(null)
+      // Open drawer first, then set URL — both trigger extraction in AddPropertyDrawer
+      setDrawerOpen(true)
       setInitialUrl(url)
-      setTimeout(() => setDrawerOpen(true), 0)
     }
   }
 

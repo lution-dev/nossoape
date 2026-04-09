@@ -72,9 +72,11 @@ export function AddPropertyDrawer({ open, onOpenChange, initialUrl, onInitialUrl
     }
   }, [open, reset])
 
-  // When a URL comes in from clipboard (FAB), pre-fill and auto-extract
+  // When a URL comes in from clipboard (FAB banner), pre-fill and auto-extract
+  // Note: do NOT guard on `open` here — the drawer may not be open yet when
+  // this effect fires, and we want extraction to start immediately.
   useEffect(() => {
-    if (initialUrl && open) {
+    if (initialUrl) {
       setLinkUrl(initialUrl)
       extract(initialUrl)
       onInitialUrlConsume?.()
