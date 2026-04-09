@@ -289,7 +289,12 @@ function extractImageFromHtml(html: string, pageUrl: string): string {
     html.match(/content=["']([^"']+)["'][^>]+name=["']twitter:image["']/i)?.[1]
   if (twImg) return resolveUrl(twImg, pageUrl)
 
-  // 3. First large image in HTML (skip icons/logos by requiring real path)
+  // 3. JSON-LD structured data image (string or array)
+  const jsonLdImgMatch = html.match(/"image"\s*:\s*(?:\[\s*"([^"]+)"|"\s*([^"]+)\s*")/i)
+  const jsonLdImg = jsonLdImgMatch?.[1] || jsonLdImgMatch?.[2]
+  if (jsonLdImg) return resolveUrl(jsonLdImg, pageUrl)
+
+  // 4. First generic real image in HTML (fallback)
   const imgMatches = html.matchAll(/<img[^>]+src=["']([^"']+)["'][^>]*/gi)
   for (const match of imgMatches) {
     const src = match[1]
@@ -301,15 +306,12 @@ function extractImageFromHtml(html: string, pageUrl: string): string {
       !src.includes("avatar") &&
       !src.includes("pixel") &&
       !src.includes("1x1") &&
+      !src.includes("blurred") && // Avoid blurred placeholders like in Zap
       (src.includes(".jpg") || src.includes(".jpeg") || src.includes(".png") || src.includes(".webp") || src.includes("IMG") || src.includes("/img/") || src.includes("/image") || src.includes("cdn"))
     ) {
       return resolveUrl(src, pageUrl)
     }
   }
-
-  // 4. JSON-LD image
-  const jsonLdImg = html.match(/"image"\s*:\s*"([^"]+)"/i)?.[1]
-  if (jsonLdImg) return resolveUrl(jsonLdImg, pageUrl)
 
   return ""
 }
