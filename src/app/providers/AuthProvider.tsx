@@ -17,8 +17,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
     const store = useAuthStore.getState
 
     /** Fetch the user's full profile + board — never throws */
-    const loadProfile = async (userId: string, googleAvatarUrl?: string) => {
+    const loadProfile = async (userId: string) => {
       try {
+        console.log("[Auth] Fetching profile for", userId)
         const { data: profile, error } = await supabase
           .from("users_profile")
           .select("*")
@@ -31,15 +32,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         }
         if (!profile) return null
 
-        // Sync Google avatar to DB if not yet saved
-        if (!profile.avatar_url && googleAvatarUrl) {
-          await supabase
-            .from("users_profile")
-            .update({ avatar_url: googleAvatarUrl })
-            .eq("id", userId)
-          profile.avatar_url = googleAvatarUrl
-        }
-
+        console.log("[Auth] Profile OK:", profile.display_name, "board:", profile.board_id)
         store().setProfile(profile)
 
         if (profile.board_id) {
@@ -52,6 +45,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
           if (be) {
             console.error("[Auth] Board error:", be.code, be.message)
           } else if (board) {
+            console.log("[Auth] Board OK:", board.name)
             store().setBoard(board)
             const { data: members } = await supabase
               .from("users_profile")
@@ -85,10 +79,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         console.log("[Auth] getSession:", session?.user?.email ?? "no session")
         if (session?.user) {
           store().setUser({ id: session.user.id, email: session.user.email! })
-          const googleAvatar =
-            session.user.user_metadata?.avatar_url ||
-            session.user.user_metadata?.picture
-          await loadProfile(session.user.id, googleAvatar)
+          await loadProfile(session.user.id)
         }
       } catch (err) {
         console.error("[Auth] getSession error:", err)
@@ -116,10 +107,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
           store().setLoading(true)
           try {
             store().setUser({ id: session.user.id, email: session.user.email! })
-            const googleAvatar =
-              session.user.user_metadata?.avatar_url ||
-              session.user.user_metadata?.picture
-            await loadProfile(session.user.id, googleAvatar)
+            await loadProfile(session.user.id)
           } finally {
             store().setLoading(false)
           }

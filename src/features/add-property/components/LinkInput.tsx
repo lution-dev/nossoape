@@ -110,7 +110,7 @@ export function LinkInput({ value, onChange, onUrlDetected, isExtracting }: Link
         stateStyles[effectiveState]
       )}
     >
-      <div className="flex items-center gap-3 px-5 py-3.5">
+      <div className="flex items-center gap-3.5 px-6 py-4">
         {/* Leading icon — reacts to state */}
         <span className="transition-all duration-200">
           {leadingIcon[effectiveState]}
