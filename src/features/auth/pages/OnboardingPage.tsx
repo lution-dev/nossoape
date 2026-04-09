@@ -33,6 +33,53 @@ export function OnboardingPage() {
     }
   }, [profile, board, navigate, step])
 
+  // Safety check: query Supabase directly in case the store wasn't hydrated
+  // (e.g., RLS was blocking earlier). If profile+board exist, go straight home.
+  useEffect(() => {
+    if (!user || profile) return // Already handled above
+
+    const check = async () => {
+      const { supabase } = await import("@/lib/supabase")
+      const { setProfile, setBoard, setBoardMembers } = useAuthStore.getState()
+
+      const { data: prof } = await supabase
+        .from("users_profile")
+        .select("*")
+        .eq("id", user.id)
+        .single()
+
+      if (!prof) return // No profile — onboarding is correct
+
+      setProfile(prof)
+      if (prof.display_name) setDisplayName(prof.display_name)
+
+      if (prof.board_id) {
+        const { data: boardData } = await supabase
+          .from("boards")
+          .select("*")
+          .eq("id", prof.board_id)
+          .single()
+
+        if (boardData) {
+          setBoard(boardData)
+          const { data: members } = await supabase
+            .from("users_profile")
+            .select("*")
+            .eq("board_id", boardData.id)
+          if (members) setBoardMembers(members)
+          navigate("/", { replace: true })
+          return
+        }
+      }
+      // Has profile but no board — skip the name step
+      setStep("choice")
+    }
+
+    check()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user])
+
+
   const handleSetName = async () => {
     if (!displayName.trim() || !user) return
 
