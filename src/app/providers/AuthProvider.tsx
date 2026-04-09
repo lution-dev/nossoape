@@ -7,92 +7,102 @@ interface AuthProviderProps {
 }
 
 export function AuthProvider({ children }: AuthProviderProps) {
-  const storeRef = useRef(useAuthStore.getState())
-  useEffect(() => useAuthStore.subscribe((s) => { storeRef.current = s }), [])
+  const initialized = useRef(false)
 
   useEffect(() => {
-    let cancelled = false
+    // StrictMode mounts twice in dev — guard against double-init
+    if (initialized.current) return
+    initialized.current = true
+
+    const store = useAuthStore.getState
 
     /** Fetch the user's full profile + board — never throws */
     const loadProfile = async (userId: string) => {
       try {
         console.log("[Auth] Fetching profile for", userId)
-        const { data: profile, error: profileError } = await supabase
+        const { data: profile, error } = await supabase
           .from("users_profile")
           .select("*")
           .eq("id", userId)
           .single()
 
-        if (profileError) {
-          console.error("[Auth] Profile fetch error:", profileError.code, profileError.message)
+        if (error) {
+          console.error("[Auth] Profile error:", error.code, error.message)
           return null
         }
+        if (!profile) return null
 
-        if (!profile || cancelled) return profile
-        console.log("[Auth] Profile loaded:", profile.display_name, "board_id:", profile.board_id)
-
-        storeRef.current.setProfile(profile)
+        console.log("[Auth] Profile OK:", profile.display_name, "board:", profile.board_id)
+        store().setProfile(profile)
 
         if (profile.board_id) {
-          const { data: board, error: boardErr } = await supabase
+          const { data: board, error: be } = await supabase
             .from("boards")
             .select("*")
             .eq("id", profile.board_id)
             .single()
 
-          if (boardErr) {
-            console.error("[Auth] Board fetch error:", boardErr.code, boardErr.message)
-          } else if (board && !cancelled) {
-            console.log("[Auth] Board loaded:", board.name)
-            storeRef.current.setBoard(board)
-
+          if (be) {
+            console.error("[Auth] Board error:", be.code, be.message)
+          } else if (board) {
+            console.log("[Auth] Board OK:", board.name)
+            store().setBoard(board)
             const { data: members } = await supabase
               .from("users_profile")
               .select("*")
               .eq("board_id", board.id)
-            if (members && !cancelled) storeRef.current.setBoardMembers(members)
+            if (members) store().setBoardMembers(members)
           }
         }
         return profile
       } catch (err) {
-        console.error("[Auth] loadProfile unexpected error:", err)
+        console.error("[Auth] Unexpected:", err)
         return null
       }
     }
 
-    /** Handle an authenticated session */
-    const handleSession = async (session: { user: { id: string; email?: string; user_metadata?: Record<string, string> } } | null) => {
-      if (!session?.user || cancelled) return
-      console.log("[Auth] Handling session for", session.user.email)
-      storeRef.current.setUser({ id: session.user.id, email: session.user.email ?? "" })
-      await loadProfile(session.user.id)
+    // Bootstrap: use getSession() once, then subscribe for future changes
+    const init = async () => {
+      store().setLoading(true)
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
+        console.log("[Auth] getSession:", session?.user?.email ?? "no session")
+        if (session?.user) {
+          store().setUser({ id: session.user.id, email: session.user.email! })
+          await loadProfile(session.user.id)
+        }
+      } catch (err) {
+        console.error("[Auth] getSession error:", err)
+      } finally {
+        console.log("[Auth] Init done. Loading → false")
+        store().setLoading(false)
+      }
     }
 
-    // Use onAuthStateChange as SOLE source of truth
+    init()
+
+    // Only handle FUTURE auth changes (sign-in from login page, sign-out)
+    // We do NOT rely on onAuthStateChange for the initial session — that
+    // caused the SIGNED_IN loop when combined with StrictMode.
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        if (cancelled) return
-        console.log("[Auth] Event:", event, session?.user?.email ?? "no user")
+        console.log("[Auth] onChange:", event, session?.user?.email ?? "—")
 
-        if (event === "INITIAL_SESSION") {
-          storeRef.current.setLoading(true)
-          try {
-            await handleSession(session)
-          } finally {
-            if (!cancelled) {
-              console.log("[Auth] Init done. profile:", !!storeRef.current.profile, "board:", !!storeRef.current.board)
-              storeRef.current.setLoading(false)
-            }
+        if (event === "SIGNED_IN" && session?.user) {
+          // Skip if already authenticated (prevents loop on session refresh)
+          if (store().isAuthenticated && store().profile) {
+            console.log("[Auth] Already authenticated, skipping SIGNED_IN")
+            return
           }
-        } else if (event === "SIGNED_IN") {
-          storeRef.current.setLoading(true)
+          store().setLoading(true)
           try {
-            await handleSession(session)
+            store().setUser({ id: session.user.id, email: session.user.email! })
+            await loadProfile(session.user.id)
           } finally {
-            if (!cancelled) storeRef.current.setLoading(false)
+            store().setLoading(false)
           }
         } else if (event === "SIGNED_OUT") {
-          const s = storeRef.current
+          const s = store()
           s.setUser(null)
           s.setProfile(null)
           s.setBoard(null)
@@ -102,11 +112,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
     )
 
     return () => {
-      cancelled = true
       subscription.unsubscribe()
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, []) // Empty — runs once on mount
 
   return <>{children}</>
 }
