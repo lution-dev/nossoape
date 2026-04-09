@@ -22,22 +22,24 @@ export function FAB() {
   const handleFabClick = async () => {
     // On mobile (especially iOS), clipboard can only be read during a user gesture.
     // So we read it here — on the tap — which is the only reliable cross-platform approach.
+    let urlFromClipboard: string | undefined = undefined
+
     try {
       const text = (await navigator.clipboard.readText()).trim()
       const lastSeen = localStorage.getItem("last_clipboard_url") || ""
 
       if (isRealEstateUrl(text) && text !== lastSeen) {
         localStorage.setItem("last_clipboard_url", text)
-        setInitialUrl(text)
-      } else {
-        setInitialUrl(undefined)
+        urlFromClipboard = text
       }
     } catch {
       // Clipboard permission denied or not available — open drawer normally
-      setInitialUrl(undefined)
     }
 
-    setOpen(true)
+    // Set initialUrl first, then open the drawer on the next tick,
+    // so the drawer's useEffect sees initialUrl already set when open becomes true.
+    setInitialUrl(urlFromClipboard)
+    setTimeout(() => setOpen(true), 0)
   }
 
   return (

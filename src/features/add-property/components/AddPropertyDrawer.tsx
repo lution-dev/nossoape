@@ -53,13 +53,9 @@ export function AddPropertyDrawer({ open, onOpenChange, initialUrl, onInitialUrl
   const [modality, setModality] = useState<"rent" | "buy">("rent")
   const [notes, setNotes] = useState("")
 
-  // Reset form when drawer closes, or handle initialUrl when it opens
+  // Reset form on close
   useEffect(() => {
-    if (open && initialUrl) {
-      setLinkUrl(initialUrl)
-      extract(initialUrl)
-      if (onInitialUrlConsume) onInitialUrlConsume()
-    } else if (!open) {
+    if (!open) {
       setLinkUrl("")
       setTitle("")
       setPrice("")
@@ -74,7 +70,17 @@ export function AddPropertyDrawer({ open, onOpenChange, initialUrl, onInitialUrl
       setIsSubmitting(false)
       reset()
     }
-  }, [open, initialUrl, extract, onInitialUrlConsume, reset])
+  }, [open, reset])
+
+  // When a URL comes in from clipboard (FAB), pre-fill and auto-extract
+  useEffect(() => {
+    if (initialUrl && open) {
+      setLinkUrl(initialUrl)
+      extract(initialUrl)
+      onInitialUrlConsume?.()
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialUrl])
 
   // When extractor returns data, populate fields
   useEffect(() => {
