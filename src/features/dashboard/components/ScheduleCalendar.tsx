@@ -67,7 +67,6 @@ export function ScheduleCalendar({ properties, onPropertyClick }: ScheduleCalend
 
   // Upcoming list for mobile
   const upcomingProperties = useMemo(() => {
-    const today = new Date()
     return properties
       .map((p) => {
         const dateStr = p.extras?.agendamento || p.updated_at
