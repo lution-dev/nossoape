@@ -127,13 +127,22 @@ export function PropertyDetailPage() {
     updateProperty(property.id, { status: "scheduled", extras: updatedExtras })
     setProperty((prev) => prev ? { ...prev, status: "scheduled", extras: updatedExtras } : null)
 
-    const { error } = await supabase
+    // Try with extras first, fallback to status-only if column doesn't exist
+    let result = await supabase
       .from("properties")
       .update({ status: "scheduled", extras: updatedExtras })
       .eq("id", property.id)
 
+    if (result.error) {
+      // Column extras may not exist — update status only
+      result = await supabase
+        .from("properties")
+        .update({ status: "scheduled" })
+        .eq("id", property.id)
+    }
+
     setIsSavingSchedule(false)
-    if (error) {
+    if (result.error) {
       updateProperty(property.id, { status: property.status, extras: property.extras })
       setProperty((prev) => prev ? { ...prev, status: property.status, extras: property.extras } : null)
       toast.error("Erro ao agendar visita")

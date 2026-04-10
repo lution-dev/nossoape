@@ -22,7 +22,6 @@ export function AppShell() {
   if (isPropertyDetail) {
     return (
       <div className="min-h-svh bg-background">
-        <ClipboardBanner />
         <Outlet />
       </div>
     )
