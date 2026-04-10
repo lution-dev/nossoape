@@ -4,6 +4,40 @@
 
 ---
 
+## 🔴 REGRA CRÍTICA: Verificação de Build
+
+> **SEMPRE use `tsc -b` (não `tsc --noEmit`) para verificar antes de commit/deploy.**
+
+O projeto usa `tsconfig.app.json` com regras **mais estritas** que o `tsconfig.json` base:
+
+```json
+// tsconfig.app.json — Linting flags que QUEBRAM o build
+"noUnusedLocals": true,        // TS6133: imports/variáveis não usadas = ERRO
+"noUnusedParameters": true,    // TS6133: parâmetros não usados = ERRO
+```
+
+| Comando | O que verifica | Usa tsconfig |
+|---|---|---|
+| `tsc --noEmit` | Tipos apenas | `tsconfig.json` (base, **mais leve**) |
+| `tsc -b` | Tipos + unused + build | `tsconfig.app.json` (**produção, mais estrito**) |
+| `npm run build` | `tsc -b && vite build` | **Este é o que roda no deploy** |
+
+**Checklist pré-commit:**
+```bash
+# ✅ CORRETO — mesmo comando do build de produção
+npx tsc -b
+
+# ❌ ERRADO — não detecta unused imports/vars
+npx tsc --noEmit
+```
+
+**Erros comuns que passam no `--noEmit` mas quebram no `-b`:**
+- `import { X } from "..."` onde `X` não é usado no código
+- `const { a, b, c } = hook()` onde `c` não é referenciado
+- Parâmetros de função nunca usados (prefixe com `_` se intencional)
+
+---
+
 ## 1. Stack Tecnológica
 
 | Camada | Tecnologia | Versão | Justificativa |
