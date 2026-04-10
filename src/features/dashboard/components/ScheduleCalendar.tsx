@@ -10,14 +10,12 @@ interface ScheduleCalendarProps {
 
 export function ScheduleCalendar({ properties, onPropertyClick }: ScheduleCalendarProps) {
   const [currentDate, setCurrentDate] = useState(() => new Date())
-  const [view, setView] = useState<"month" | "week" | "day">("month")
 
   // Helper to generate days of the month
   const getDaysInMonth = (year: number, month: number) => {
     return new Date(year, month + 1, 0).getDate()
   }
 
-  // Use UTC to prevent timezone shifts if matching "agendamento" which is YYYY-MM-DD
   const year = currentDate.getFullYear()
   const month = currentDate.getMonth() // 0-11
   
@@ -33,19 +31,19 @@ export function ScheduleCalendar({ properties, onPropertyClick }: ScheduleCalend
   const propertiesByDate = useMemo(() => {
     const map = new Map<number, Property[]>()
     properties.forEach((p) => {
-      const agendamento = p.extras?.agendamento
-      if (agendamento) {
-        // Simple match assuming YYYY-MM-DD format
-        const dateParts = agendamento.split("T")[0].split("-")
-        const pYear = parseInt(dateParts[0])
-        const pMonth = parseInt(dateParts[1]) - 1
-        const pDay = parseInt(dateParts[2])
+      // Try extras.agendamento first, fallback to updated_at date
+      const dateStr = p.extras?.agendamento || p.updated_at
+      if (!dateStr) return
 
-        if (pYear === year && pMonth === month) {
-          const list = map.get(pDay) || []
-          list.push(p)
-          map.set(pDay, list)
-        }
+      const dateParts = dateStr.split("T")[0].split("-")
+      const pYear = parseInt(dateParts[0])
+      const pMonth = parseInt(dateParts[1]) - 1
+      const pDay = parseInt(dateParts[2])
+
+      if (pYear === year && pMonth === month) {
+        const list = map.get(pDay) || []
+        list.push(p)
+        map.set(pDay, list)
       }
     })
     return map
@@ -61,131 +59,145 @@ export function ScheduleCalendar({ properties, onPropertyClick }: ScheduleCalend
 
   const goToday = () => {
     setCurrentDate(new Date())
-    setView("month")
   }
 
-  const monthName = currentDate.toLocaleString('pt-BR', { month: 'short', year: 'numeric' })
+  const monthName = currentDate.toLocaleString('pt-BR', { month: 'long', year: 'numeric' })
   
   const weekDays = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom']
 
+  // Upcoming list for mobile
+  const upcomingProperties = useMemo(() => {
+    const today = new Date()
+    return properties
+      .map((p) => {
+        const dateStr = p.extras?.agendamento || p.updated_at
+        return { ...p, _scheduleDate: dateStr }
+      })
+      .sort((a, b) => (a._scheduleDate || "").localeCompare(b._scheduleDate || ""))
+  }, [properties])
+
   return (
-    <div className="w-full max-w-full overflow-hidden">
-      <div className="w-full h-full flex flex-col overflow-hidden bg-background">
-        
-        {/* Header (Top Bar) */}
-        <div className="flex flex-row items-center justify-between p-3 md:p-6 border-b border-border/40 gap-2 md:gap-4 bg-white rounded-t-xl border-x border-t w-full">
-          <div className="flex items-center gap-2 md:gap-4 flex-1 md:flex-none overflow-x-auto pb-0 no-scrollbar min-w-0">
-            <div className="hidden md:flex items-center gap-2 pr-4 border-r border-border/40 shrink-0">
-              <CalendarIcon className="h-5 w-5 text-primary" />
-              <h2 className="text-lg font-bold text-foreground truncate">Visitas Agendadas</h2>
-            </div>
-            <div className="flex items-center gap-0.5 md:gap-1 bg-muted/50 p-1 rounded-lg shrink-0">
-              <button onClick={goPrevMonth} className="inline-flex items-center justify-center rounded-md transition-colors h-7 w-7 md:h-8 md:w-8 hover:bg-white">
-                <ChevronLeft className="h-4 w-4" />
-              </button>
-              <button onClick={goToday} className="inline-flex items-center justify-center transition-colors min-h-8 rounded-md px-2 md:px-3 h-7 md:h-8 text-[11px] md:text-xs font-bold hover:bg-white text-foreground">
-                Hoje
-              </button>
-              <button onClick={goNextMonth} className="inline-flex items-center justify-center rounded-md transition-colors h-7 w-7 md:h-8 md:w-8 hover:bg-white">
-                <ChevronRight className="h-4 w-4" />
-              </button>
-            </div>
-            <h3 className="text-[12px] md:text-sm font-bold text-muted-foreground shrink-0 capitalize whitespace-nowrap">
-              {monthName}
-            </h3>
+    <div className="space-y-4">
+      {/* Calendar Card */}
+      <div className="rounded-xl border border-border bg-card overflow-hidden">
+        {/* Header */}
+        <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+          <div className="flex items-center gap-2">
+            <CalendarIcon className="h-4 w-4 text-muted-foreground" />
+            <h3 className="text-sm font-semibold capitalize">{monthName}</h3>
           </div>
-          
-          <div className="flex items-center gap-2 md:gap-3 shrink-0">
-            <div className="hidden md:block">
-              <div className="inline-flex items-center justify-center rounded-lg text-muted-foreground bg-muted/50 p-1 h-9">
-                <button 
-                  onClick={() => setView('month')}
-                  className={cn("inline-flex items-center justify-center whitespace-nowrap rounded-md transition-all text-xs font-bold px-3 h-7", view === 'month' && "bg-white text-foreground border border-border/40 shadow-sm")}
-                >Mês</button>
-                <button 
-                  onClick={() => setView('week')}
-                  className={cn("inline-flex items-center justify-center whitespace-nowrap rounded-md transition-all text-xs font-bold px-3 h-7", view === 'week' && "bg-white text-foreground border border-border/40 shadow-sm")}
-                >Semana</button>
-                <button 
-                  onClick={() => setView('day')}
-                  className={cn("inline-flex items-center justify-center whitespace-nowrap rounded-md transition-all text-xs font-bold px-3 h-7", view === 'day' && "bg-white text-foreground border border-border/40 shadow-sm")}
-                >Dia</button>
-              </div>
-            </div>
+          <div className="flex items-center gap-1">
+            <button onClick={goPrevMonth} className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors">
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+            <button onClick={goToday} className="px-2 py-1 rounded-md text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors">
+              Hoje
+            </button>
+            <button onClick={goNextMonth} className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors">
+              <ChevronRight className="h-4 w-4" />
+            </button>
           </div>
         </div>
 
-        {/* Grid do Calendário */}
-        <div className="p-0 flex-1 flex flex-col overflow-hidden bg-white border-x border-b rounded-b-xl border-border/40">
-          <div className="flex-1 grid grid-cols-7 bg-white">
-            
-            {/* Headers da semana */}
-            {weekDays.map(d => (
-               <div key={d} className="py-2 sm:py-3 text-center text-[10px] sm:text-xs font-bold uppercase tracking-widest sm:tracking-wider text-muted-foreground border-b border-border/40 bg-white sm:bg-muted/20">
-                 <span className="sm:hidden">{d.charAt(0)}</span>
-                 <span className="hidden sm:inline">{d}</span>
-               </div>
-            ))}
+        {/* Calendar Grid */}
+        <div className="grid grid-cols-7">
+          {/* Week day headers */}
+          {weekDays.map(d => (
+            <div key={d} className="py-2 text-center text-[10px] font-medium uppercase tracking-wider text-muted-foreground border-b border-border">
+              {d.charAt(0)}
+            </div>
+          ))}
 
-            {/* Dias em branco iniciais */}
-            {blanks.map(b => (
-              <div key={`blank-${b}`} className="min-h-[70px] sm:min-h-[120px] p-0.5 sm:p-2 border-b border-border/40 sm:border-r transition-all opacity-30 sm:bg-muted/10 sm:opacity-40" />
-            ))}
+          {/* Blank days */}
+          {blanks.map(b => (
+            <div key={`blank-${b}`} className="h-12 border-b border-border/30 bg-muted/10" />
+          ))}
 
-            {/* Dias do mês */}
-            {days.map(day => {
-              const dayProps = propertiesByDate.get(day) || []
-              const isToday = new Date().getDate() === day && new Date().getMonth() === month && new Date().getFullYear() === year
+          {/* Days */}
+          {days.map(day => {
+            const dayProps = propertiesByDate.get(day) || []
+            const isToday = new Date().getDate() === day && new Date().getMonth() === month && new Date().getFullYear() === year
+            const hasEvents = dayProps.length > 0
+
+            return (
+              <div
+                key={day}
+                className={cn(
+                  "h-12 flex flex-col items-center justify-center gap-0.5 border-b border-border/30 transition-colors",
+                  hasEvents && "cursor-pointer",
+                  hasEvents && "bg-purple-500/5"
+                )}
+                onClick={() => {
+                  if (dayProps.length === 1) onPropertyClick?.(dayProps[0])
+                }}
+              >
+                <span className={cn(
+                  "text-sm font-medium w-7 h-7 flex items-center justify-center rounded-full transition-colors",
+                  isToday && "bg-foreground text-background font-bold",
+                  hasEvents && !isToday && "text-purple-500 font-bold"
+                )}>
+                  {day}
+                </span>
+                {/* Dots */}
+                {hasEvents && (
+                  <div className="flex gap-0.5">
+                    {dayProps.slice(0, 3).map((p, idx) => (
+                      <div key={`dot-${p.id}-${idx}`} className="w-1 h-1 rounded-full bg-purple-500" />
+                    ))}
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* Upcoming visits list */}
+      <div className="space-y-2">
+        <h3 className="text-sm font-medium text-muted-foreground px-1">Visitas agendadas</h3>
+        {upcomingProperties.length === 0 ? (
+          <p className="text-sm text-muted-foreground text-center py-4">Nenhuma visita agendada</p>
+        ) : (
+          <div className="space-y-2">
+            {upcomingProperties.map((p) => {
+              const dateStr = p._scheduleDate
+              const formatted = dateStr
+                ? new Date(dateStr.includes("T") ? dateStr : dateStr + "T12:00:00").toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', weekday: 'short' })
+                : "Sem data"
+              const time = dateStr?.includes("T") && p.extras?.agendamento?.includes("T")
+                ? dateStr.split("T")[1]
+                : null
 
               return (
-                <div key={day} className={cn(
-                  "min-h-[70px] sm:min-h-[120px] p-0.5 sm:p-2 border-b border-border/40 sm:border-r transition-all group relative hover:bg-primary/[0.02] flex flex-col items-center sm:block",
-                  isToday && "bg-primary/5 sm:bg-primary/5"
-                )}>
-                  <div className="flex justify-center sm:justify-between items-start mb-1 sm:mb-1 w-full">
-                    <div className="flex-1 flex justify-center sm:justify-start">
-                      <span className={cn(
-                        "text-[15px] sm:text-sm font-normal sm:font-bold w-8 h-8 flex items-center justify-center rounded-full sm:rounded-lg transition-colors text-foreground sm:text-muted-foreground sm:group-hover:bg-muted",
-                        isToday && "bg-primary text-white sm:text-white font-bold"
-                      )}>
-                        {day}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Desktop event view */}
-                  <div className="hidden sm:flex flex-col gap-1 overflow-hidden mt-1">
-                    {dayProps.slice(0, 3).map((p, idx) => (
-                      <div 
-                        key={`${p.id}-${idx}`}
-                        title={p.title}
-                        onClick={(e) => { e.stopPropagation(); onPropertyClick?.(p); }}
-                        className="cursor-pointer px-2 py-1 rounded text-[10px] font-bold border truncate transition-all flex items-center gap-1.5 bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100"
-                      >
-                        <div className="w-1.5 h-1.5 rounded-full shrink-0 bg-blue-500" />
-                        {p.title}
-                        {p.extras?.agendamento?.includes('T') && <span className="text-blue-500 hidden xl:inline ml-auto">{p.extras.agendamento.split('T')[1]}</span>}
+                <button
+                  key={p.id}
+                  onClick={() => onPropertyClick?.(p)}
+                  className="flex items-center gap-3 w-full rounded-xl border border-border bg-card p-3 text-left hover:bg-secondary/50 transition-colors"
+                >
+                  {/* Image */}
+                  <div className="h-12 w-12 shrink-0 rounded-lg bg-muted overflow-hidden">
+                    {p.image_url ? (
+                      <img src={p.image_url} alt="" className="h-full w-full object-cover" referrerPolicy="no-referrer" />
+                    ) : (
+                      <div className="h-full w-full flex items-center justify-center">
+                        <CalendarIcon className="h-4 w-4 text-muted-foreground/30" />
                       </div>
-                    ))}
-                    {dayProps.length > 3 && (
-                      <div className="text-[10px] font-bold text-muted-foreground pl-1 mt-0.5">+ {dayProps.length - 3} mais</div>
                     )}
                   </div>
-
-                  {/* Mobile dots view */}
-                  <div className="flex justify-center gap-1 sm:hidden mt-auto mb-1 flex-wrap px-1">
-                   {dayProps.slice(0, 3).map((p, idx) => (
-                     <div key={`dot-${p.id}-${idx}`} className="w-1.5 h-1.5 rounded-full bg-blue-500" />
-                   ))}
-                   {dayProps.length > 3 && (
-                     <div className="text-[9px] leading-none text-muted-foreground font-bold ml-0.5">+{dayProps.length - 3}</div>
-                   )}
+                  {/* Info */}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate">{p.title}</p>
+                    <div className="flex items-center gap-1.5 mt-0.5">
+                      <CalendarIcon className="h-3 w-3 text-purple-500" />
+                      <span className="text-xs text-muted-foreground capitalize">{formatted}</span>
+                      {time && <span className="text-xs text-muted-foreground">· {time}</span>}
+                    </div>
                   </div>
-                </div>
+                </button>
               )
             })}
           </div>
-        </div>
+        )}
       </div>
     </div>
   )
