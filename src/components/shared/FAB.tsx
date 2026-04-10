@@ -12,7 +12,7 @@ export function FAB({ drawerOpen, onDrawerOpenChange }: FABProps) {
     <>
       <motion.button
         onClick={() => onDrawerOpenChange(true)}
-        className="fixed bottom-[calc(4.5rem+env(safe-area-inset-bottom))] right-4 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-foreground text-background shadow-lg"
+        className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] right-4 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-foreground text-background shadow-[0_8px_30px_rgba(0,0,0,0.12)]"
         whileTap={{ scale: 0.9 }}
         whileHover={{ scale: 1.05 }}
         initial={{ scale: 0, opacity: 0 }}

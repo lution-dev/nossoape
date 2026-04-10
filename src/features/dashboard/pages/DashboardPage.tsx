@@ -124,7 +124,7 @@ export function DashboardPage() {
       )}
 
       {/* Bottom Tab Bar */}
-      <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-background/95 backdrop-blur-sm pb-[env(safe-area-inset-bottom)]">
+      <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-[#141416]/95 backdrop-blur-md pb-[env(safe-area-inset-bottom)]">
         <div className="mx-auto flex h-14 max-w-lg items-center justify-around">
           <button
             onClick={() => setMainView("home")}
