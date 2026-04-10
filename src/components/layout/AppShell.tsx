@@ -3,7 +3,6 @@ import { Outlet, useLocation } from "react-router"
 import { Header } from "./Header"
 import { Sidebar } from "./Sidebar"
 import { useMediaQuery } from "@/hooks/useMediaQuery"
-import { AddPropertyDrawer } from "@/features/add-property/components/AddPropertyDrawer"
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
 
 // Pages that should NOT show the default header
@@ -120,7 +119,7 @@ function AddPropertyInlineForm({ onClose }: { onClose: () => void }) {
   const [linkUrl, setLinkUrl] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [showEdit, setShowEdit] = useState(false)
-  const { data: extractedData, isExtracting, error: extractError, extract, reset } = useLinkExtractor()
+  const { data: extractedData, isExtracting, error: extractError, extract } = useLinkExtractor()
 
   const [title, setTitle] = useState("")
   const [price, setPrice] = useState("")
