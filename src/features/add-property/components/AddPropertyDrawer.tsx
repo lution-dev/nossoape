@@ -40,6 +40,7 @@ export function AddPropertyDrawer({ open, onOpenChange, initialUrl, onInitialUrl
   const [linkUrl, setLinkUrl] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [showEdit, setShowEdit] = useState(false)
+  const [expanded, setExpanded] = useState(false)
   const { data: extractedData, isExtracting, error: extractError, extract, reset } = useLinkExtractor()
 
   // Editable fields - populated from extraction
@@ -67,6 +68,7 @@ export function AddPropertyDrawer({ open, onOpenChange, initialUrl, onInitialUrl
       setModality("rent")
       setNotes("")
       setShowEdit(false)
+      setExpanded(false)
       setIsSubmitting(false)
       reset()
     }
@@ -183,9 +185,14 @@ export function AddPropertyDrawer({ open, onOpenChange, initialUrl, onInitialUrl
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
-      <DrawerContent className="h-[92vh]">
+      <DrawerContent className={`${expanded ? 'h-[95vh]' : 'h-[85vh]'} transition-[height] duration-300 ease-out`}>
         <DrawerTitle className="sr-only">Adicionar imóvel</DrawerTitle>
-        <div className="flex-1 min-h-0 overflow-y-auto px-4 pt-2 pb-12 space-y-6">
+        <div
+          className="flex-1 min-h-0 overflow-y-auto px-4 pt-2 pb-12 space-y-6"
+          onScroll={(e) => {
+            if ((e.target as HTMLDivElement).scrollTop > 10) setExpanded(true)
+          }}
+        >
           {/* Link Input */}
           <LinkInput
             value={linkUrl}
