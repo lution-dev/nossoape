@@ -183,9 +183,9 @@ export function AddPropertyDrawer({ open, onOpenChange, initialUrl, onInitialUrl
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
-      <DrawerContent className="max-h-[92vh]">
+      <DrawerContent className="h-[92vh]">
         <DrawerTitle className="sr-only">Adicionar imóvel</DrawerTitle>
-        <div className="overflow-y-auto px-4 pt-2 pb-12 space-y-6">
+        <div className="flex-1 min-h-0 overflow-y-auto px-4 pt-2 pb-12 space-y-6">
           {/* Link Input */}
           <LinkInput
             value={linkUrl}
