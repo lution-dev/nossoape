@@ -1,6 +1,7 @@
 import { useLocation, useNavigate, useSearchParams } from "react-router"
 import { ArrowLeft, Search, X } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { AppIcon } from "@/components/shared/AppIcon"
 import { APP_NAME } from "@/lib/constants"
 import { useAuthStore } from "@/stores/authStore"
 import { useState, useEffect } from "react"
@@ -70,8 +71,8 @@ export function Header({ showBack = false, title, isDesktop = false }: HeaderPro
   return (
     <header className="sticky top-0 z-30 border-b border-border bg-background/80 backdrop-blur-sm pt-[env(safe-area-inset-top)]">
       <div className={`flex h-14 items-center gap-4 ${isDesktop ? "mx-auto max-w-6xl px-6" : "mx-auto max-w-lg px-4"}`}>
-        {/* Left: Back button + Title */}
-        <div className="flex items-center gap-3 shrink-0">
+        {/* Left: Back button + Icon + Title */}
+        <div className="flex items-center gap-2 shrink-0">
           {showBack && (
             <button
               onClick={() => navigate(-1)}
@@ -80,6 +81,8 @@ export function Header({ showBack = false, title, isDesktop = false }: HeaderPro
               <ArrowLeft className="h-5 w-5" />
             </button>
           )}
+          {/* Mobile: show app icon next to title */}
+          {!isDesktop && isHome && <AppIcon className="h-5 w-5" />}
           <h1 className="text-lg font-semibold tracking-tight">
             {isDesktop ? pageTitle : mobileTitle}
           </h1>

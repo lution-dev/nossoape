@@ -3,6 +3,7 @@ import { Home, Calendar, Plus, Settings } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
+import { AppIcon } from "@/components/shared/AppIcon"
 import { APP_NAME } from "@/lib/constants"
 import { useAuthStore } from "@/stores/authStore"
 import { usePropertyStore } from "@/stores/propertyStore"
@@ -31,11 +32,9 @@ export function Sidebar({ onAddProperty }: SidebarProps) {
       <div className="flex h-14 items-center gap-2.5 border-b border-border px-5">
         <button
           onClick={() => navigate("/")}
-          className="flex items-center gap-2.5 text-foreground"
+          className="flex items-center gap-2 text-foreground"
         >
-          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-foreground text-background text-xs font-bold">
-            N
-          </div>
+          <AppIcon className="h-6 w-6" />
           <span className="text-sm font-semibold tracking-tight">{APP_NAME}</span>
         </button>
       </div>
