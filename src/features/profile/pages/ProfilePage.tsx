@@ -26,7 +26,7 @@ export function ProfilePage() {
   }
 
   return (
-    <div className="space-y-6 px-4 py-6">
+    <div className="space-y-6 px-4 py-6 lg:max-w-xl lg:mx-auto">
       {/* User Info */}
       <div className="flex flex-col items-center gap-3">
         <Avatar className="h-20 w-20">
