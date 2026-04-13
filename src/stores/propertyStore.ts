@@ -51,7 +51,7 @@ interface PropertyState {
   fetchProperties: (boardId?: string) => Promise<void>
 }
 
-export const usePropertyStore = create<PropertyState>((set) => ({
+export const usePropertyStore = create<PropertyState>((set, get) => ({
   properties: [],
   isLoading: false,
 
@@ -92,6 +92,29 @@ export const usePropertyStore = create<PropertyState>((set) => ({
 
       if (error) throw error
       const fetched = ((data as Property[]) || []).map(hydrateProperty)
+
+      // ── Zombie-session guard ──
+      // RLS returns [] silently when JWT expires (auth.uid() is null).
+      // If we had data but fetch returned empty, verify the session is
+      // still valid before wiping state — otherwise dashboard goes blank.
+      const currentProps = get().properties
+      if (fetched.length === 0 && currentProps.length > 0) {
+        console.warn("[Store] Properties returned empty but state has data — checking session")
+        try {
+          const { data: { user } } = await supabase.auth.getUser()
+          if (!user) {
+            // Session is truly dead — preserve state, AuthProvider will redirect
+            console.warn("[Store] Session dead — preserving state, auth will redirect")
+            return
+          }
+          // Session valid — user genuinely has no properties (all deleted?)
+          console.log("[Store] Session valid — accepting empty result")
+        } catch {
+          // Network error — be conservative, don't wipe data
+          console.warn("[Store] Could not verify session — preserving state")
+          return
+        }
+      }
 
       // Preserve local price_breakdown data that may not be in DB yet
       set((state) => {

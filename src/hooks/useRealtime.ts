@@ -67,7 +67,13 @@ export function useRealtimeProperties(boardId: string | null | undefined) {
           removeProperty(deleted.id)
         }
       )
-      .subscribe()
+      .subscribe((status) => {
+        console.log(`[Realtime] Channel status: ${status}`)
+        if (status === "SUBSCRIBED") {
+          // Channel (re)connected — re-fetch to catch events missed while disconnected
+          usePropertyStore.getState().fetchProperties(boardId!)
+        }
+      })
 
     return () => {
       supabase.removeChannel(channel)
