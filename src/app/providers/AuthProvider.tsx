@@ -21,9 +21,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
     const getGoogleAvatar = (user: { user_metadata?: Record<string, any> }) =>
       user.user_metadata?.avatar_url || user.user_metadata?.picture
 
-    /** Fetch the user's full profile + board — never throws */
+    /** Fetch the user's full profile + board — retries once on failure */
     const loadProfile = async (userId: string, googleAvatarUrl?: string) => {
-      try {
+      const attemptLoad = async (): Promise<any> => {
         const { data: profile, error } = await supabase
           .from("users_profile")
           .select("*")
@@ -34,6 +34,19 @@ export function AuthProvider({ children }: AuthProviderProps) {
           console.error("[Auth] Profile error:", error.code, error.message)
           return null
         }
+        return profile
+      }
+
+      try {
+        let profile = await attemptLoad()
+
+        // Retry once after 500ms if first attempt failed (RLS propagation delay)
+        if (!profile) {
+          console.log("[Auth] Profile load failed, retrying in 500ms...")
+          await new Promise(r => setTimeout(r, 500))
+          profile = await attemptLoad()
+        }
+
         if (!profile) return null
 
         // Always use the Google avatar from session metadata as source of truth.

@@ -2,6 +2,7 @@ import { useState, useEffect } from "react"
 import { useNavigate } from "react-router"
 import { useAuth } from "@/features/auth/hooks/useAuth"
 import { useAuthStore } from "@/stores/authStore"
+import { supabase } from "@/lib/supabase"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -39,7 +40,6 @@ export function OnboardingPage() {
     if (!user || profile) return // Already handled above
 
     const check = async () => {
-      const { supabase } = await import("@/lib/supabase")
       const { setProfile, setBoard, setBoardMembers } = useAuthStore.getState()
 
       const { data: prof } = await supabase
@@ -85,7 +85,28 @@ export function OnboardingPage() {
 
     setIsSubmitting(true)
     try {
-      await createProfile(user.id, displayName.trim())
+      const updatedProfile = await createProfile(user.id, displayName.trim())
+      // If user already had a board (returning user), go straight home
+      if (updatedProfile?.board_id) {
+        const { setBoard, setBoardMembers } = useAuthStore.getState()
+
+        const { data: boardData } = await supabase
+          .from("boards")
+          .select("*")
+          .eq("id", updatedProfile.board_id)
+          .single()
+
+        if (boardData) {
+          setBoard(boardData)
+          const { data: members } = await supabase
+            .from("users_profile")
+            .select("*")
+            .eq("board_id", boardData.id)
+          if (members) setBoardMembers(members)
+          navigate("/", { replace: true })
+          return
+        }
+      }
       setStep("choice")
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Erro ao salvar nome"

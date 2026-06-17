@@ -87,18 +87,42 @@ export function useAuth() {
 
   const createProfile = useCallback(
     async (userId: string, displayName: string, avatarUrl?: string) => {
-      const { data, error } = await supabase
+      // Check if profile already exists (avoids upsert RLS issues)
+      const { data: existing } = await supabase
         .from("users_profile")
-        .upsert(
-          {
+        .select("id")
+        .eq("id", userId)
+        .single()
+
+      let data, error
+
+      if (existing) {
+        // Profile exists — UPDATE only the fields that changed
+        const result = await supabase
+          .from("users_profile")
+          .update({
+            display_name: displayName,
+            avatar_url: avatarUrl || null,
+          })
+          .eq("id", userId)
+          .select()
+          .single()
+        data = result.data
+        error = result.error
+      } else {
+        // New profile — INSERT
+        const result = await supabase
+          .from("users_profile")
+          .insert({
             id: userId,
             display_name: displayName,
             avatar_url: avatarUrl || null,
-          },
-          { onConflict: "id" }
-        )
-        .select()
-        .single()
+          })
+          .select()
+          .single()
+        data = result.data
+        error = result.error
+      }
 
       if (error) throw error
       setProfile(data)
