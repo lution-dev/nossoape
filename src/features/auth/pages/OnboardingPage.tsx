@@ -39,14 +39,22 @@ export function OnboardingPage() {
   useEffect(() => {
     if (!user || profile) return // Already handled above
 
+    console.log("[Onboarding] Safety check: querying profile for user", user.id)
+
     const check = async () => {
       const { setProfile, setBoard, setBoardMembers } = useAuthStore.getState()
 
-      const { data: prof } = await supabase
+      const { data: prof, error: profError } = await supabase
         .from("users_profile")
         .select("*")
         .eq("id", user.id)
-        .single()
+        .maybeSingle()
+
+      if (profError) {
+        console.error("[Onboarding] Safety check error:", profError.code, profError.message)
+      }
+
+      console.log("[Onboarding] Safety check profile:", prof ? `found (board_id: ${prof.board_id})` : "not found")
 
       if (!prof) return // No profile — onboarding is correct
 
@@ -67,11 +75,13 @@ export function OnboardingPage() {
             .select("*")
             .eq("board_id", boardData.id)
           if (members) setBoardMembers(members)
+          console.log("[Onboarding] Safety check: profile+board found, navigating home")
           navigate("/", { replace: true })
           return
         }
       }
       // Has profile but no board — skip the name step
+      console.log("[Onboarding] Safety check: profile found but no board, skipping to choice")
       setStep("choice")
     }
 
@@ -83,11 +93,15 @@ export function OnboardingPage() {
   const handleSetName = async () => {
     if (!displayName.trim() || !user) return
 
+    console.log("[Onboarding] handleSetName:", user.id, displayName.trim())
     setIsSubmitting(true)
     try {
       const updatedProfile = await createProfile(user.id, displayName.trim())
+      console.log("[Onboarding] Profile saved:", updatedProfile)
+
       // If user already had a board (returning user), go straight home
       if (updatedProfile?.board_id) {
+        console.log("[Onboarding] User has board_id, fetching board...")
         const { setBoard, setBoardMembers } = useAuthStore.getState()
 
         const { data: boardData } = await supabase
@@ -103,13 +117,19 @@ export function OnboardingPage() {
             .select("*")
             .eq("board_id", boardData.id)
           if (members) setBoardMembers(members)
+          console.log("[Onboarding] Navigating home (returning user)")
           navigate("/", { replace: true })
           return
         }
+        console.log("[Onboarding] Board not found, showing choice step")
       }
       setStep("choice")
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Erro ao salvar nome"
+      console.error("[Onboarding] handleSetName error:", err)
+      const msg =
+        err instanceof Error ? err.message :
+        typeof err === "object" && err !== null && "message" in err ? String((err as any).message) :
+        "Erro ao salvar nome"
       toast.error(msg)
     } finally {
       setIsSubmitting(false)

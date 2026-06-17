@@ -87,30 +87,41 @@ export function useAuth() {
 
   const createProfile = useCallback(
     async (userId: string, displayName: string, avatarUrl?: string) => {
-      // Check if profile already exists (avoids upsert RLS issues)
-      const { data: existing } = await supabase
+      console.log("[createProfile] Starting for user:", userId, "name:", displayName)
+
+      // Check if profile already exists — use maybeSingle to avoid PGRST116 error
+      const { data: existing, error: selectError } = await supabase
         .from("users_profile")
-        .select("id")
+        .select("*")
         .eq("id", userId)
-        .single()
+        .maybeSingle()
+
+      if (selectError) {
+        console.error("[createProfile] SELECT error:", selectError.code, selectError.message)
+      }
+
+      console.log("[createProfile] Existing profile:", existing ? "yes" : "no")
 
       let data, error
 
       if (existing) {
-        // Profile exists — UPDATE only the fields that changed
+        // Profile exists — UPDATE display_name, preserve avatar if not provided
+        console.log("[createProfile] Updating existing profile...")
+        const updates: Record<string, unknown> = { display_name: displayName }
+        if (avatarUrl) updates.avatar_url = avatarUrl
+
         const result = await supabase
           .from("users_profile")
-          .update({
-            display_name: displayName,
-            avatar_url: avatarUrl || null,
-          })
+          .update(updates)
           .eq("id", userId)
           .select()
           .single()
         data = result.data
         error = result.error
+        console.log("[createProfile] UPDATE result:", data ? "ok" : "failed", error?.message)
       } else {
         // New profile — INSERT
+        console.log("[createProfile] Inserting new profile...")
         const result = await supabase
           .from("users_profile")
           .insert({
@@ -122,9 +133,14 @@ export function useAuth() {
           .single()
         data = result.data
         error = result.error
+        console.log("[createProfile] INSERT result:", data ? "ok" : "failed", error?.message)
       }
 
-      if (error) throw error
+      if (error) {
+        console.error("[createProfile] Final error:", error.code, error.message, error.details)
+        throw new Error(error.message)
+      }
+
       setProfile(data)
       return data
     },
