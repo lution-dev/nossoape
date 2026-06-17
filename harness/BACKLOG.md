@@ -3,19 +3,11 @@
 
 ## Tasks Ativas
 
-#### T-AD-01: Fix onboarding redirect para usuários existentes
-**Arquivo:** src/app/providers/AuthProvider.tsx, src/features/auth/pages/OnboardingPage.tsx
+#### T-AD-03: Fix detecção de modalidade (compra vs aluguel) e preço para imóveis de venda
+**Arquivo:** src/features/add-property/hooks/useLinkExtractor.ts
 **Critérios:**
-- [x] AuthProvider.loadProfile faz retry 1x se RLS falhar
-- [x] OnboardingPage.handleSetName redireciona para / se profile já tem board_id
-- [x] Safety check usa import estático de supabase
-**Status:** ✅ Concluído
-
-#### T-AD-02: Fix "Erro ao salvar nome" no onboarding
-**Arquivo:** src/features/auth/hooks/useAuth.ts
-**Critérios:**
-- [x] createProfile faz SELECT primeiro → INSERT ou UPDATE (sem upsert)
-- [x] Funciona para perfis novos (INSERT)
-- [x] Funciona para perfis existentes (UPDATE)
-- [x] RLS-safe
-**Status:** ✅ Concluído
+- [ ] URLs com `/comprar/` ou `/venda/` devem setar modality="buy"
+- [ ] Para modality="buy", não exibir price_breakdown mensal como preço principal
+- [ ] Para modality="buy", usar o preço de venda do título como price
+- [ ] price_breakdown pode ter condo para compra (é info útil), mas total mensal NÃO é o preço principal
+**Status:** 🔄 Em andamento

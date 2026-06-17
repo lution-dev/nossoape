@@ -219,16 +219,17 @@ function parsePriceBreakdown(html: string, source: string): PriceBreakdown | nul
 
 // ─── Parsing Helpers ───
 
-function extractFromTitle(title: string): Partial<ExtractedData> {
+function extractFromTitle(title: string, url?: string): Partial<ExtractedData> {
   const result: Partial<ExtractedData> = {}
 
   // Price: R$ X.XXX or R$ X.XXX,XX
   const priceMatch = title.match(/R\$\s*[\d.,]+/)
   if (priceMatch) result.price = priceMatch[0].trim()
 
-  // Modality
-  const isRent = /alugu[eé]|alugar|locação/i.test(title)
-  const isBuy = /vend[aer]|comprar/i.test(title)
+  // Modality — check title AND URL path
+  const textToCheck = url ? `${title} ${url}` : title
+  const isRent = /alugu[eé]|alugar|loca[çc][ãa]o|\/alugar\/|\/aluguel\//i.test(textToCheck)
+  const isBuy = /vend[aer]|comprar|\/comprar\/|\/venda\/|\/compra\//i.test(textToCheck)
   result.modality = isBuy && !isRent ? "buy" : "rent"
 
   // Bedrooms
@@ -557,23 +558,44 @@ export function useLinkExtractor() {
 
       // Extract all available data
       const htmlData = extractFromHtml(html, url)
-      const titleData = extractFromTitle(htmlData.title || "")
+      const titleData = extractFromTitle(htmlData.title || "", url)
       const source = new URL(url).hostname.replace("www.", "")
 
-      // Extract price breakdown
+      // Determine modality early — affects price logic
+      const modality = titleData.modality || "rent"
+
+      // Extract price breakdown (monthly costs)
       const priceBreakdown = parsePriceBreakdown(html, source)
 
       // Extract dynamic extras (floor, pets, furnished, amenities, etc.)
       const extras = extractExtras(html)
 
+      // ─── Price logic ───
+      // For RENT: use breakdown total (monthly cost) as the main price
+      // For BUY: use the sale price from title/HTML, NOT the breakdown total
+      //          (breakdown may contain condo/IPTU but those aren't the sale price)
+      let price: string
+      if (modality === "buy") {
+        // For sale: use the price from title (e.g. "R$ 353.000,00")
+        // Don't use priceBreakdown.total since that's monthly costs (condo etc.)
+        price = titleData.price || htmlData.price || ""
+      } else {
+        // For rent: use breakdown total if available, otherwise fallback
+        price = priceBreakdown
+          ? formatBRL(priceBreakdown.total)
+          : htmlData.price || titleData.price || ""
+      }
+
+      // For buy modality, clear breakdown if it only has monthly costs (no rent)
+      // Keep it only if it has useful info (condo for monthly cost estimation)
+      const finalBreakdown = modality === "buy" ? null : priceBreakdown
+
       // Build result
       const result: ExtractedData = {
         title: htmlData.title || "",
         imageUrl: htmlData.imageUrl || "",
-        price: priceBreakdown
-          ? formatBRL(priceBreakdown.total)
-          : htmlData.price || titleData.price || "",
-        priceBreakdown,
+        price,
+        priceBreakdown: finalBreakdown,
         address: htmlData.address || "",
         neighborhood: extractNeighborhood(htmlData.title || ""),
         bedrooms: htmlData.bedrooms || titleData.bedrooms || "",
@@ -582,7 +604,7 @@ export function useLinkExtractor() {
         area: htmlData.area || titleData.area || "",
         source,
         url,
-        modality: titleData.modality || "rent",
+        modality,
         extras,
       }
 

@@ -247,7 +247,7 @@ export function PropertyDetailPage() {
           <StatusBadge status={property.status} />
         </div>
         <div className="mt-1 flex items-center gap-2">
-          {property.price_breakdown ? (
+          {property.price_breakdown && property.modality === "rent" ? (
             <span className={cn("font-semibold text-foreground", isDesktop ? "text-xl" : "text-lg")}>
               R$ {property.price_breakdown.total.toLocaleString("pt-BR")}/mês
             </span>
@@ -290,9 +290,11 @@ export function PropertyDetailPage() {
         <div className="rounded-xl border border-border bg-secondary/30 p-4 space-y-3">
           <div className="flex items-center gap-2">
             <Receipt className="h-4 w-4 text-muted-foreground" />
-            <h3 className="text-sm font-medium">Custos Mensais</h3>
+            <h3 className="text-sm font-medium">
+              {property.modality === "rent" ? "Custos Mensais" : "Valor do Imóvel"}
+            </h3>
           </div>
-          {property.price_breakdown ? (
+          {property.price_breakdown && property.modality === "rent" ? (
             <>
               <div className="space-y-2">
                 {property.price_breakdown.rent != null && property.price_breakdown.rent > 0 && (

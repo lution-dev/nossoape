@@ -24,10 +24,12 @@ export function PropertyCard({ property }: PropertyCardProps) {
   const [showBreakdown, setShowBreakdown] = useState(false)
   const breakdown = property.price_breakdown
 
-  const displayPrice = breakdown
+  const isRent = property.modality === "rent"
+
+  const displayPrice = breakdown && isRent
     ? `R$ ${breakdown.total.toLocaleString("pt-BR")}/mês`
     : property.price
-      ? `${property.price}${property.modality === "rent" ? "/mês" : ""}`
+      ? `${property.price}${isRent ? "/mês" : ""}`
       : null
 
   const handleBreakdownClick = (e: React.MouseEvent) => {
